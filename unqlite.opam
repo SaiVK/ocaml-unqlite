@@ -1,0 +1,11 @@
+opam-version: "1.2"
+version: "0.1"
+maintainer: "webmaster@burgerdev.de"
+authors: ["Markus Rudy"]
+homepage: "https://github.com/burgerdev/ocaml-unqlite"
+bug-reports: "https://github.com/burgerdev/ocaml-unqlite/issues"
+dev-repo: "https://github.com/burgerdev/ocaml-unqlite.git"
+license: "GPLv3"
+build: [
+  ["jbuilder" "build" "--only" "unqlite" "--root" "." "-j" jobs "@install"]
+]

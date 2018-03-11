@@ -1,0 +1,24 @@
+*.annot
+*.cmo
+*.cma
+*.cmi
+*.a
+*.o
+*.cmx
+*.cmxs
+*.cmxa
+
+# ocamlbuild working directory
+_build/
+
+# ocamlbuild targets
+*.byte
+*.native
+
+**/.merlin
+*.install
+
+# editors
+.DS_Store
+*.swp
+*~
