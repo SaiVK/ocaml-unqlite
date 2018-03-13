@@ -1,0 +1,13 @@
+(jbuild_version 1)
+
+(executables
+ ((names (main))
+  (libraries (unqlite
+              cmdliner
+              fmt fmt.cli fmt.tty
+              logs logs.cli logs.fmt))))
+
+(install
+ ((section bin)
+  (files ((main.exe as unqlite))))
+)
