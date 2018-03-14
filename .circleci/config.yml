@@ -1,0 +1,20 @@
+version: 2.0
+jobs:
+  build:
+    docker:
+      - image: burgerdev/ocaml-addressmapper-devel:alpine
+    working_directory: /tmp/oam
+    steps:
+      - checkout
+      - run:
+          name: "All"
+          command: |
+            export TERM=dumb
+            git submodule update --init
+            eval `opam config env`
+            make build test
+workflows:
+  version: 2
+  build_and_deploy:
+    jobs:
+      - build
