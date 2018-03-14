@@ -116,7 +116,7 @@ extern value o_unqlite_kv_fetch(value db_value, value key_value) {
 
   //Allocate a buffer big enough to hold the record content
   if (size < 0) o_raise("unqlite returned an invalid data size");
-  char *buf = (char *) malloc((size_t) size + 1);
+  char *buf = (char *) malloc(((size_t) size) + 1);
   if(!buf) o_raise("fetch failed (out of memory)");
 
   //Copy record content in our buffer
