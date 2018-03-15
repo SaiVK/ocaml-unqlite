@@ -5,7 +5,7 @@ let bin_version = "0.1"
 
 let store db key value _ =
   Logs.debug (fun m -> m "Storing key [%s] in database [%s]." key db);
-  let open Unqlite.Unqlite in
+  let open Unqlite.Bindings in
   let db = u_open db in
   try
     u_store db key value;
@@ -15,7 +15,7 @@ let store db key value _ =
 
 let fetch db_name key _ =
   Logs.debug (fun m -> m "Fetching key [%s] from database [%s]." key db_name);
-  let open Unqlite.Unqlite in
+  let open Unqlite.Bindings in
   let db = u_open db_name in
   begin
     try

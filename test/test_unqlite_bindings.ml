@@ -1,7 +1,7 @@
 open OUnit
 open Fmt
 
-open Unqlite.Unqlite
+open Unqlite.Bindings
 
 let open_inmem () = u_open ":mem:"
 

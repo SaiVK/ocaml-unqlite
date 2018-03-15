@@ -1,19 +1,20 @@
 
-module Unqlite = struct
-  type t
+module Bindings = Unqlite_bindings
+open Bindings
 
-  exception Unqlite_error of string
-  let _ =
-    Callback.register_exception "de.burgerdev.unqlite.error" (Unqlite_error "")
+type t = Unqlite_bindings.t
 
-  (* TODO: support open flags *)
-  external u_open: string -> t = "o_unqlite_open"
-  external u_close: t -> unit = "o_unqlite_close"
+let fetch_exn = u_fetch
+let fetch t key =
+  try
+    Some (fetch_exn t key)
+  with
+  | Not_found -> None
 
-  external u_commit: t -> unit = "o_unqlite_commit"
-  external u_rollback: t -> unit = "o_unqlite_rollback"
+let store = u_store
 
-  external u_store: t -> string -> string -> unit = "o_unqlite_kv_store"
-  external u_fetch: t -> string -> string = "o_unqlite_kv_fetch"
+let open_rw = u_open
+let close = u_close
 
-end
+let commit = u_commit
+let rollback = u_rollback

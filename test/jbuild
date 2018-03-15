@@ -1,16 +1,16 @@
 (jbuild_version 1)
 
 (executables
- ((names (test_unqlite))
+ ((names (test_unqlite_bindings))
   (libraries (unqlite oUnit fmt))))
 
 (alias
- ((name unqlite)
-  (deps    (test_unqlite.exe))
+ ((name unqlite_bindings)
+  (deps    (test_unqlite_bindings.exe))
   (action (run ${<})))
 )
 
 (alias
  ((name    runtest)
-  (deps    ((alias unqlite))))
+  (deps    ((alias unqlite_bindings))))
 )
