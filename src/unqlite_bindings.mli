@@ -11,5 +11,6 @@ val commit: t -> unit
 val rollback: t -> unit
 
 val store: t -> string -> string -> unit
+val append: t -> string -> string -> unit
 val fetch: t -> string -> string
 val delete: t -> string -> unit

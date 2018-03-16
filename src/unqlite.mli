@@ -18,6 +18,7 @@ val delete: t -> string -> unit
 val delete_exn: t -> string -> unit
 
 val store: t -> string -> string -> unit
+val append: t -> string -> string -> unit
 
 val commit: t -> unit
 val rollback: t -> unit

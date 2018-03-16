@@ -73,7 +73,9 @@ let test6 _ =
   let db = open_inmem () in
   assert_raises Not_found (fun _ -> fetch db key);
   store db key value;
-  assert_equal value(fetch db key);
+  assert_equal value (fetch db key);
+  append db key value;
+  assert_equal (String.concat "" [value; value]) (fetch db key);
   close db
 
 

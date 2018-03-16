@@ -14,5 +14,6 @@ external commit: t -> unit = "o_unqlite_commit"
 external rollback: t -> unit = "o_unqlite_rollback"
 
 external store: t -> string -> string -> unit = "o_unqlite_kv_store"
+external append: t -> string -> string -> unit = "o_unqlite_kv_append"
 external fetch: t -> string -> string = "o_unqlite_kv_fetch"
 external delete: t -> string -> unit = "o_unqlite_kv_delete"

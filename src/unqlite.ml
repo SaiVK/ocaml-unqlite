@@ -11,6 +11,7 @@ let fetch t key =
   | Not_found -> None
 
 let store = Bindings.store
+let append = Bindings.append
 
 let delete_exn = Bindings.delete
 let delete t key =

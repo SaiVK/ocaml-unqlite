@@ -133,6 +133,20 @@ CAMLprim value o_unqlite_kv_store(value db_value, value key, value data) {
   CAMLreturn(Val_unit);
 }
 
+CAMLprim value o_unqlite_kv_append(value db_value, value key, value data) {
+  CAMLparam3(db_value, key, data);
+  unqlite *db = get_db(db_value);
+
+  int rc = unqlite_kv_append(
+    db,
+    String_val(key), determine_unqlite_key_size(key),
+    String_val(data), determine_unqlite_data_size(data));
+
+  if (rc != UNQLITE_OK) o_raise(db, "append failed");
+
+  CAMLreturn(Val_unit);
+}
+
 CAMLprim value o_unqlite_kv_delete(value db_value, value key) {
   CAMLparam2(db_value, key);
   unqlite *db = get_db(db_value);
