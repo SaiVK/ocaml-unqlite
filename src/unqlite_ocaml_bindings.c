@@ -1,5 +1,7 @@
 #include <limits.h>
 
+#define CAML_NAME_SPACE
+
 #include <caml/memory.h>
 #include <caml/mlvalues.h>
 #include <caml/callback.h>
