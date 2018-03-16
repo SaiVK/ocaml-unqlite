@@ -2,7 +2,7 @@
 
 (executables
  ((names (test_unqlite_bindings))
-  (libraries (unqlite oUnit fmt))))
+  (libraries (unqlite oUnit fmt str))))
 
 (alias
  ((name unqlite_bindings)

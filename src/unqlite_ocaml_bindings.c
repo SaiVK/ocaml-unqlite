@@ -10,28 +10,39 @@
 
 #include "unqlite.h"
 
-inline static void o_raise(const char *msg) {
-  caml_raise_with_string(*caml_named_value("de.burgerdev.unqlite.error"), msg);
+static const char *OCAML_UNQLITE_ERROR = "de.burgerdev.unqlite.error";
+
+inline static void o_raise(unqlite *db, const char *default_msg) {
+  const char *msg = NULL;
+  int msg_length = 0;
+
+  unqlite_config(db, UNQLITE_CONFIG_ERR_LOG, &msg, &msg_length);
+  if( msg_length > 0 )
+    caml_raise_with_string(*caml_named_value(OCAML_UNQLITE_ERROR), msg);
+  else
+    caml_raise_with_string(*caml_named_value(OCAML_UNQLITE_ERROR), default_msg);
 }
 
 inline static unqlite* get_db(value db_value) {
   unqlite* db = (unqlite *) Field(db_value, 0);
 
   if (!db)
-    o_raise("Database has been closed");
+    caml_raise_with_string(
+      *caml_named_value(OCAML_UNQLITE_ERROR),
+      "Database has been closed");
 
   return db;
 }
 
 inline static long long to_llong(unsigned long long s, const char *msg) {
   if (s > LLONG_MAX)
-    o_raise(msg);
+    caml_raise_with_string(*caml_named_value(OCAML_UNQLITE_ERROR), msg);
   return (long long) s;
 }
 
 inline static int to_int(unsigned long long s, const char *msg) {
   if (s > INT_MAX)
-    o_raise(msg);
+    caml_raise_with_string(*caml_named_value(OCAML_UNQLITE_ERROR), msg);
   return (int) s;
 }
 
@@ -46,7 +57,7 @@ static value o_unqlite_open_internal(value path, unsigned int flags) {
      `strlen != caml_string_length` for security reasons.
    */
   rc = unqlite_open(&db, String_val(path), flags);
-  if (rc != UNQLITE_OK) o_raise("open failed");
+  if (rc != UNQLITE_OK) o_raise(db, "open failed");
 
   db_value = caml_alloc(1, Abstract_tag);
   Store_field(db_value, 0, (value) db);
@@ -70,7 +81,7 @@ extern value o_unqlite_close(value db_value) {
   unqlite *db = get_db(db_value);
 
   if (unqlite_close(db) != UNQLITE_OK)
-    o_raise("close failed");
+    o_raise(db, "close failed");
 
   Store_field(db_value, 0, (value) NULL);
 
@@ -82,7 +93,7 @@ extern value o_unqlite_commit(value db_value) {
   unqlite *db = get_db(db_value);
 
   if (unqlite_commit(db) != UNQLITE_OK)
-    o_raise("commit failed");
+    o_raise(db, "commit failed");
 
   CAMLreturn(Val_unit);
 }
@@ -93,7 +104,7 @@ extern value o_unqlite_rollback(value db_value) {
   unqlite *db = get_db(db_value);
 
   if (unqlite_rollback(db) != UNQLITE_OK)
-    o_raise("rollback failed");
+    o_raise(db, "rollback failed");
 
   CAMLreturn(Val_unit);
 }
@@ -107,7 +118,7 @@ extern value o_unqlite_kv_store(value db_value, value key, value data) {
     String_val(key), to_int(caml_string_length(key), "key too long"),
     String_val(data), to_llong(caml_string_length(data), "too much data"));
 
-  if (rc != UNQLITE_OK) o_raise("store failed");
+  if (rc != UNQLITE_OK) o_raise(db, "store failed");
 
   CAMLreturn(Val_unit);
 }
@@ -126,16 +137,16 @@ extern value o_unqlite_kv_fetch(value db_value, value key_value) {
   //Extract data size first
   rc = unqlite_kv_fetch(db, key, key_size, NULL, &size);
   if (rc == UNQLITE_NOTFOUND) caml_raise_not_found();
-  else if (rc != UNQLITE_OK) o_raise("fetch failed (could not get size)");
+  else if (rc != UNQLITE_OK) o_raise(db, "could not get value size");
 
   //Allocate a buffer big enough to hold the record content
-  if (size < 0) o_raise("unqlite returned an invalid data size");
+  if (size < 0) o_raise(db, "unqlite returned an invalid data size");
   char *buf = (char *) malloc(((size_t) size) + 1);
-  if(!buf) o_raise("fetch failed (out of memory)");
+  if(!buf) caml_raise_with_string(*caml_named_value(OCAML_UNQLITE_ERROR), "out of memory");
 
   //Copy record content in our buffer
   rc = unqlite_kv_fetch(db, key, key_size, buf, &size);
-  if (rc != UNQLITE_OK) o_raise("fetch failed (could not fetch data)");
+  if (rc != UNQLITE_OK) o_raise(db, "could not fetch value");
   // make sure that the string is correctly 0-terminated
   buf[size] = 0;
 
