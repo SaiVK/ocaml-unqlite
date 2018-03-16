@@ -14,6 +14,9 @@ val close: t -> unit
 val fetch: t -> string -> string option
 val fetch_exn: t -> string -> string
 
+val delete: t -> string -> unit
+val delete_exn: t -> string -> unit
+
 val store: t -> string -> string -> unit
 
 val commit: t -> unit

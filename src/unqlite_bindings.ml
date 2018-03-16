@@ -15,3 +15,4 @@ external rollback: t -> unit = "o_unqlite_rollback"
 
 external store: t -> string -> string -> unit = "o_unqlite_kv_store"
 external fetch: t -> string -> string = "o_unqlite_kv_fetch"
+external delete: t -> string -> unit = "o_unqlite_kv_delete"

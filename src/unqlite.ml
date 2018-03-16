@@ -12,6 +12,13 @@ let fetch t key =
 
 let store = Bindings.store
 
+let delete_exn = Bindings.delete
+let delete t key =
+  try
+    ignore (delete_exn t key)
+  with
+  | Not_found -> ()
+
 type open_mode =
   | Create
   | Read_write

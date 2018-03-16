@@ -34,16 +34,22 @@ inline static unqlite* get_db(value db_value) {
   return db;
 }
 
-inline static long long to_llong(unsigned long long s, const char *msg) {
-  if (s > LLONG_MAX)
-    caml_raise_with_string(*caml_named_value(OCAML_UNQLITE_ERROR), msg);
-  return (long long) s;
+// cast key length of type [mlsize_t] to [int], fail if it would overflow
+inline static int determine_unqlite_key_size(value key) {
+  mlsize_t s = caml_string_length(key);
+  if (s > INT_MAX)
+    caml_raise_with_string(*caml_named_value(OCAML_UNQLITE_ERROR), "key too long");
+  else
+    return (int) s;
 }
 
-inline static int to_int(unsigned long long s, const char *msg) {
-  if (s > INT_MAX)
-    caml_raise_with_string(*caml_named_value(OCAML_UNQLITE_ERROR), msg);
-  return (int) s;
+// cast data length of type [mlsize_t] to [long long], fail if it would overflow
+inline static long long determine_unqlite_data_size(value data) {
+  mlsize_t s = caml_string_length(data);
+  if (s > LLONG_MAX)
+    caml_raise_with_string(*caml_named_value(OCAML_UNQLITE_ERROR), "too much data");
+  else
+    return (long long) s;
 }
 
 static value o_unqlite_open_internal(value path, unsigned int flags) {
@@ -64,19 +70,23 @@ static value o_unqlite_open_internal(value path, unsigned int flags) {
   CAMLreturn(db_value);
 }
 
-extern CAMLprim value o_unqlite_open_create(value path) {
+/**********************/
+/*     Public API     */
+/**********************/
+
+CAMLprim value o_unqlite_open_create(value path) {
   return o_unqlite_open_internal(path, UNQLITE_OPEN_CREATE);
 }
 
-extern CAMLprim value o_unqlite_open_mmap(value path) {
+CAMLprim value o_unqlite_open_mmap(value path) {
   return o_unqlite_open_internal(path, UNQLITE_OPEN_READONLY | UNQLITE_OPEN_MMAP);
 }
 
-extern CAMLprim value o_unqlite_open_readwrite(value path) {
+CAMLprim value o_unqlite_open_readwrite(value path) {
   return o_unqlite_open_internal(path, UNQLITE_OPEN_READWRITE);
 }
 
-extern value o_unqlite_close(value db_value) {
+CAMLprim value o_unqlite_close(value db_value) {
   CAMLparam1(db_value);
   unqlite *db = get_db(db_value);
 
@@ -88,7 +98,7 @@ extern value o_unqlite_close(value db_value) {
   CAMLreturn(Val_unit);
 }
 
-extern value o_unqlite_commit(value db_value) {
+CAMLprim value o_unqlite_commit(value db_value) {
   CAMLparam1(db_value);
   unqlite *db = get_db(db_value);
 
@@ -98,7 +108,7 @@ extern value o_unqlite_commit(value db_value) {
   CAMLreturn(Val_unit);
 }
 
-extern value o_unqlite_rollback(value db_value) {
+CAMLprim value o_unqlite_rollback(value db_value) {
   CAMLparam1(db_value);
 
   unqlite *db = get_db(db_value);
@@ -109,28 +119,41 @@ extern value o_unqlite_rollback(value db_value) {
   CAMLreturn(Val_unit);
 }
 
-extern value o_unqlite_kv_store(value db_value, value key, value data) {
+CAMLprim value o_unqlite_kv_store(value db_value, value key, value data) {
   CAMLparam3(db_value, key, data);
   unqlite *db = get_db(db_value);
 
   int rc = unqlite_kv_store(
     db,
-    String_val(key), to_int(caml_string_length(key), "key too long"),
-    String_val(data), to_llong(caml_string_length(data), "too much data"));
+    String_val(key), determine_unqlite_key_size(key),
+    String_val(data), determine_unqlite_data_size(data));
 
   if (rc != UNQLITE_OK) o_raise(db, "store failed");
 
   CAMLreturn(Val_unit);
 }
 
-extern value o_unqlite_kv_fetch(value db_value, value key_value) {
+CAMLprim value o_unqlite_kv_delete(value db_value, value key) {
+  CAMLparam2(db_value, key);
+  unqlite *db = get_db(db_value);
+
+  int rc = unqlite_kv_delete(
+    db, String_val(key), determine_unqlite_key_size(key));
+
+  if (rc == UNQLITE_NOTFOUND) caml_raise_not_found();
+  if (rc != UNQLITE_OK) o_raise(db, "delete failed");
+
+  CAMLreturn(Val_unit);
+}
+
+CAMLprim value o_unqlite_kv_fetch(value db_value, value key_value) {
   CAMLparam2(db_value, key_value);
   CAMLlocal1(data);
   int rc;
   unqlite_int64 size;
 
-  int key_size = to_int(caml_string_length(key_value), "key too long");
-  char *key = String_val(key_value);
+  int key_size = determine_unqlite_key_size(key_value);
+  const char *key = String_val(key_value);
 
   unqlite *db = get_db(db_value);
 

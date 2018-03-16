@@ -33,9 +33,12 @@ let test3 _ =
   close db
 
 let test4 _ =
+  let (key, value) = "foo", "bar" in
   let db = open_inmem () in
-  store db "foo" "bar";
-  assert_equal "bar" (fetch db "foo");
+  store db key value;
+  assert_equal value (fetch db key);
+  delete db key;
+  assert_raises Not_found (fun _ -> fetch db "foo");
   close db
 
 let test5a _ =
