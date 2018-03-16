@@ -1,20 +1,27 @@
 
 module Bindings = Unqlite_bindings
-open Bindings
 
 type t = Unqlite_bindings.t
 
-let fetch_exn = u_fetch
+let fetch_exn = Bindings.fetch
 let fetch t key =
   try
     Some (fetch_exn t key)
   with
   | Not_found -> None
 
-let store = u_store
+let store = Bindings.store
 
-let open_rw = u_open
-let close = u_close
+type open_mode =
+  | Create
+  | Read_write
+  | MMap
 
-let commit = u_commit
-let rollback = u_rollback
+let open_db ?(mode=Create) name = match mode with
+  | Create -> Bindings.open_create name
+  | Read_write -> Bindings.open_readwrite name
+  | MMap -> Bindings.open_mmap name
+let close = Bindings.close
+
+let commit = Bindings.commit
+let rollback = Bindings.rollback

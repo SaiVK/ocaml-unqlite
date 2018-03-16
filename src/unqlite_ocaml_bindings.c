@@ -35,7 +35,7 @@ inline static int to_int(unsigned long long s, const char *msg) {
   return (int) s;
 }
 
-extern value o_unqlite_open(value path) {
+static value o_unqlite_open_internal(value path, unsigned int flags) {
   CAMLparam1(path);
   CAMLlocal1(db_value);
 
@@ -45,12 +45,24 @@ extern value o_unqlite_open(value path) {
   /* TODO OCaml strings may contain zero bytes, we should probably fail if
      `strlen != caml_string_length` for security reasons.
    */
-  rc = unqlite_open(&db, String_val(path), UNQLITE_OPEN_CREATE);
+  rc = unqlite_open(&db, String_val(path), flags);
   if (rc != UNQLITE_OK) o_raise("open failed");
 
   db_value = caml_alloc(1, Abstract_tag);
   Store_field(db_value, 0, (value) db);
   CAMLreturn(db_value);
+}
+
+extern CAMLprim value o_unqlite_open_create(value path) {
+  return o_unqlite_open_internal(path, UNQLITE_OPEN_CREATE);
+}
+
+extern CAMLprim value o_unqlite_open_mmap(value path) {
+  return o_unqlite_open_internal(path, UNQLITE_OPEN_READONLY | UNQLITE_OPEN_MMAP);
+}
+
+extern CAMLprim value o_unqlite_open_readwrite(value path) {
+  return o_unqlite_open_internal(path, UNQLITE_OPEN_READWRITE);
 }
 
 extern value o_unqlite_close(value db_value) {

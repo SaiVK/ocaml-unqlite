@@ -4,12 +4,14 @@ exception Unqlite_error of string
 let _ =
   Callback.register_exception "de.burgerdev.unqlite.error" (Unqlite_error "")
 
-(* TODO: support open flags *)
-external u_open: string -> t = "o_unqlite_open"
-external u_close: t -> unit = "o_unqlite_close"
+(* TODO: support all open flags *)
+external open_create: string -> t = "o_unqlite_open_create"
+external open_readwrite: string -> t = "o_unqlite_open_readwrite"
+external open_mmap: string -> t = "o_unqlite_open_mmap"
+external close: t -> unit = "o_unqlite_close"
 
-external u_commit: t -> unit = "o_unqlite_commit"
-external u_rollback: t -> unit = "o_unqlite_rollback"
+external commit: t -> unit = "o_unqlite_commit"
+external rollback: t -> unit = "o_unqlite_rollback"
 
-external u_store: t -> string -> string -> unit = "o_unqlite_kv_store"
-external u_fetch: t -> string -> string = "o_unqlite_kv_fetch"
+external store: t -> string -> string -> unit = "o_unqlite_kv_store"
+external fetch: t -> string -> string = "o_unqlite_kv_fetch"

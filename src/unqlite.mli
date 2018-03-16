@@ -3,7 +3,12 @@ module Bindings: module type of Unqlite_bindings
 
 type t = Bindings.t
 
-val open_rw: string -> t
+type open_mode =
+  | Create
+  | Read_write
+  | MMap
+
+val open_db: ?mode:open_mode -> string -> t
 val close: t -> unit
 
 val fetch: t -> string -> string option

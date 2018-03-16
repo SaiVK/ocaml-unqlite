@@ -3,42 +3,47 @@ open Fmt
 
 open Unqlite.Bindings
 
-let open_inmem () = u_open ":mem:"
+let open_inmem () = open_create ":mem:"
 
 let test1 _ =
-  u_open "/tmp/db.unqlite" |> u_close
+  open_create "/tmp/db.unqlite" |> close
 
 let test2 _ =
-  let db = u_open "/tmp/db2.unqlite" in
-  u_rollback db;
-  u_commit db;
-  u_close db
+  let db = open_create "/tmp/db2.unqlite" in
+  rollback db;
+  commit db;
+  close db
 
 let test3 _ =
   let db = open_inmem () in
-  u_rollback db;
-  u_commit db;
-  u_close db
+  rollback db;
+  commit db;
+  close db
 
 let test4 _ =
   let db = open_inmem () in
-  u_store db "foo" "bar";
-  assert_equal "bar" (u_fetch db "foo");
-  u_close db
+  store db "foo" "bar";
+  assert_equal "bar" (fetch db "foo");
+  close db
 
-let test5 _ =
+let test5a _ =
   assert_raises (Unqlite_error "store failed") @@ fun _ ->
-  let db = u_open "/invalid/file" in
-  u_store db "foo" "bar"
+  let db = open_create "/invalid/file" in
+  store db "foo" "bar"
+
+let test5b _ =
+  assert_raises (Unqlite_error "store failed") @@ fun _ ->
+  let db = open_readwrite "/invalid/file" in
+  store db "foo" "bar"
 
 let test6 _ =
   let key = "foo" in
   let value = "bar" in
   let db = open_inmem () in
-  assert_raises Not_found (fun _ -> u_fetch db key);
-  u_store db key value;
-  assert_equal value(u_fetch db key);
-  u_close db
+  assert_raises Not_found (fun _ -> fetch db key);
+  store db key value;
+  assert_equal value(fetch db key);
+  close db
 
 
 let suite =
@@ -46,7 +51,8 @@ let suite =
                        ; "test2" >:: test2
                        ; "test3" >:: test3
                        ; "test4" >:: test4
-                       ; "test5" >:: test5
+                       ; "test5a" >:: test5a
+                       ; "test5b" >:: test5b
                        ; "test6" >:: test6
                        ]
 

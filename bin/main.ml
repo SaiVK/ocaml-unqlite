@@ -3,29 +3,27 @@ open Unix
 let bin_name = "unqlite"
 let bin_version = "0.1"
 
+open Unqlite
+
 let store db key value _ =
   Logs.debug (fun m -> m "Storing key [%s] in database [%s]." key db);
-  let open Unqlite.Bindings in
-  let db = u_open db in
+  let db = open_db db in
   try
-    u_store db key value;
-    u_close db
+    store db key value;
+    close db
   with
-  | e -> u_close db; raise e
+  | e -> close db; raise e
 
 let fetch db_name key _ =
   Logs.debug (fun m -> m "Fetching key [%s] from database [%s]." key db_name);
-  let open Unqlite.Bindings in
-  let db = u_open db_name in
+  let db = open_db db_name in
   begin
-    try
-      Printf.printf "%s\n" @@ u_fetch db key
-    with
-    | Not_found ->
+    match fetch db key with
+    | Some value -> Printf.printf "%s\n" value
+    | None ->
       Logs.err (fun m -> m "Key [%s] does not exist in database [%s]." key db_name)
   end;
-  u_close db
-
+  close db
 
 
 (* Logging stuff, copy pasta from docs *)
