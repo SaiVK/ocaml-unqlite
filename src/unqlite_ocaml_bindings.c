@@ -56,14 +56,13 @@ static value o_unqlite_open_internal(value path, unsigned int flags) {
   CAMLparam1(path);
   CAMLlocal1(db_value);
 
-  int rc;
-  unqlite *db;
+  unqlite *db = NULL;
 
   /* TODO OCaml strings may contain zero bytes, we should probably fail if
      `strlen != caml_string_length` for security reasons.
    */
-  rc = unqlite_open(&db, String_val(path), flags);
-  if (rc != UNQLITE_OK) o_raise(db, "open failed");
+  if (unqlite_open(&db, String_val(path), flags) != UNQLITE_OK || !db)
+    o_raise(db, "open failed");
 
   db_value = caml_alloc(1, Abstract_tag);
   Store_field(db_value, 0, (value) db);
