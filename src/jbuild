@@ -5,7 +5,8 @@
   (public_name unqlite)
   (c_names (unqlite_ocaml_bindings unqlite_amalgam))
   (c_flags
-   (-Wformat-nonliteral -Wcast-align -Wpointer-arith -Wbad-function-cast
+   (-DJX9_DISABLE_BUILTIN_FUNC -DJX9_DISABLE_DISK_IO
+    -Wformat-nonliteral -Wcast-align -Wpointer-arith -Wbad-function-cast
     -Wstrict-prototypes -Wmissing-declarations -Winline -Wundef
     -Wnested-externs -Wcast-qual -Wshadow -Wwrite-strings
     -Wfloat-equal -Wconversion -pedantic -std=c99

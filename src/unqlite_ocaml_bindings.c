@@ -10,6 +10,17 @@
 
 #include "unqlite.h"
 
+// disabling JX9 fails on mac because [SyStrncmp] is used even though it's disabled
+// -> if we're on Mac and JX9 is disabled, we provide our own implementation
+#ifdef __APPLE__
+#ifdef JX9_DISABLE_BUILTIN_FUNC
+#include <string.h>
+extern int SyStrncmp(const char* a, const char* b, unsigned long n) {
+  return strncmp(a, b, n);
+}
+#endif
+#endif
+
 static const char *OCAML_UNQLITE_ERROR = "de.burgerdev.unqlite.error";
 
 inline static void o_raise(unqlite *db, const char *default_msg) {
