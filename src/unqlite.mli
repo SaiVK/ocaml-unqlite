@@ -3,6 +3,7 @@ module Bindings: module type of Unqlite_bindings
 
 type t = Bindings.t
 
+(* TODO: replace by (and figure out) comprehensive list of helper functions *)
 type open_mode =
   | Create
   | Read_write
