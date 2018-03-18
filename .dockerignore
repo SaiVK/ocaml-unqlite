@@ -1,0 +1,11 @@
+**/.git*
+**/_build
+**/*.install
+**/.dockerignore
+**/.merlin
+.circleci
+Dockerfile
+third-party
+!third-party/unqlite/unqlite.c
+!third-party/unqlite/unqlite.h
+!third-party/unqlite/LICENSE
