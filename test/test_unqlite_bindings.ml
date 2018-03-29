@@ -78,6 +78,23 @@ let test6 _ =
   assert_equal (String.concat "" [value; value]) (fetch db key);
   close db
 
+let test_cursor _ =
+  let key = "foo" in
+  let value = "bar" in
+  let db = open_inmem () in
+  let c = Cursor.init db in
+  Cursor.first_entry c;
+  assert (not @@ Cursor.valid_entry c);
+  store db key value;
+  Cursor.first_entry c;
+  assert (Cursor.valid_entry c);
+  assert_equal key Cursor.(key c);
+  assert_equal value Cursor.(data c);
+  Cursor.next_entry c;
+  assert (not @@ Cursor.valid_entry c);
+  Cursor.release db c;
+  close db
+
 
 let suite =
   "unqlite suite" >::: [ "test1" >:: test1
@@ -87,6 +104,7 @@ let suite =
                        ; "test5a" >:: test5a
                        ; "test5b" >:: test5b
                        ; "test6" >:: test6
+                       ; "test_cursor" >:: test_cursor
                        ]
 
 let _ =

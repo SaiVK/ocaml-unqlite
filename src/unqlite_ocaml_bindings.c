@@ -103,8 +103,6 @@ CAMLprim value o_unqlite_close(value db_value) {
   if (unqlite_close(db) != UNQLITE_OK)
     o_raise(db, "close failed");
 
-  Store_field(db_value, 0, (value) NULL);
-
   CAMLreturn(Val_unit);
 }
 
@@ -203,3 +201,132 @@ CAMLprim value o_unqlite_kv_fetch(value db_value, value key_value) {
 
   CAMLreturn(data);
 }
+
+/* cursor interface */
+
+inline static unqlite_kv_cursor* get_cursor(value cursor_value) {
+  unqlite_kv_cursor* cursor = (unqlite_kv_cursor*) Field(cursor_value, 0);
+
+  if (!cursor)
+    caml_raise_with_string(
+      *caml_named_value(OCAML_UNQLITE_ERROR),
+      "invalid cursor");
+
+  return cursor;
+}
+
+inline static void o_raise_simple(const char *msg) {
+  caml_raise_with_string(*caml_named_value(OCAML_UNQLITE_ERROR), msg);
+}
+
+CAMLprim value o_unqlite_cursor_init(value db_value) {
+  CAMLparam1(db_value);
+  CAMLlocal1(cursor_value);
+
+  unqlite_kv_cursor *cursor = NULL;
+  unqlite *db = get_db(db_value);
+
+  if (unqlite_kv_cursor_init(db, &cursor) != UNQLITE_OK || !cursor)
+    o_raise(db, "cursor init failed");
+
+  cursor_value = caml_alloc(1, Abstract_tag);
+  Store_field(cursor_value, 0, (value) cursor);
+  CAMLreturn(cursor_value);
+}
+
+CAMLprim value o_unqlite_cursor_release(value db_value, value cursor_value) {
+  CAMLparam2(db_value, cursor_value);
+  unqlite *db = get_db(db_value);
+  unqlite_kv_cursor *cursor = get_cursor(cursor_value);
+
+  if (unqlite_kv_cursor_release(db, cursor) != UNQLITE_OK)
+    o_raise(db, "cursor release failed");
+
+  CAMLreturn(Val_unit);
+}
+
+CAMLprim value o_unqlite_cursor_first_entry(value cursor_value) {
+  CAMLparam1(cursor_value);
+  unqlite_kv_cursor *cursor = get_cursor(cursor_value);
+
+  if (unqlite_kv_cursor_first_entry(cursor) != UNQLITE_OK)
+    o_raise_simple("cursor first entry failed");
+
+  CAMLreturn(Val_unit);
+}
+
+CAMLprim value o_unqlite_cursor_next_entry(value cursor_value) {
+  CAMLparam1(cursor_value);
+  unqlite_kv_cursor *cursor = get_cursor(cursor_value);
+
+  if (unqlite_kv_cursor_next_entry(cursor) != UNQLITE_OK)
+    o_raise_simple("cursor next entry failed");
+
+  CAMLreturn(Val_unit);
+}
+
+CAMLprim value o_unqlite_cursor_valid_entry(value cursor_value) {
+  CAMLparam1(cursor_value);
+  CAMLreturn(Val_bool(unqlite_kv_cursor_valid_entry(get_cursor(cursor_value))));
+}
+
+CAMLprim value o_unqlite_cursor_key(value cursor_value) {
+  CAMLparam1(cursor_value);
+  CAMLlocal1(key_value);
+  int rc;
+  int key_size = -1;
+
+  unqlite_kv_cursor *cursor = get_cursor(cursor_value);
+
+  rc = unqlite_kv_cursor_key(cursor, NULL, &key_size);
+  if (rc != UNQLITE_OK) o_raise_simple("cursor: could not determine key size");
+
+  if (key_size < 0) o_raise_simple("unqlite returned an invalid key size");
+  char *buf = (char *) malloc(((size_t) key_size) + 1);
+  if(!buf) caml_raise_with_string(*caml_named_value(OCAML_UNQLITE_ERROR), "out of memory");
+
+  rc = unqlite_kv_cursor_key(cursor, buf, &key_size);
+  if (rc != UNQLITE_OK) {
+    free(buf);
+    o_raise_simple("cursor: could not get key");
+  }
+  buf[key_size] = 0;
+
+  key_value = caml_copy_string(buf);
+  free(buf);
+
+  CAMLreturn(key_value);
+}
+
+CAMLprim value o_unqlite_cursor_data(value cursor_value) {
+  CAMLparam1(cursor_value);
+  CAMLlocal1(data_value);
+  int rc;
+  unqlite_int64 value_size = -1;
+
+  unqlite_kv_cursor *cursor = get_cursor(cursor_value);
+
+  rc = unqlite_kv_cursor_data(cursor, NULL, &value_size);
+  if (rc != UNQLITE_OK) o_raise_simple("cursor: could not determine data size");
+
+  if (value_size < 0) o_raise_simple("unqlite returned an invalid data size");
+  char *buf = (char *) malloc(((size_t) value_size) + 1);
+  if(!buf) caml_raise_with_string(*caml_named_value(OCAML_UNQLITE_ERROR), "out of memory");
+
+  rc = unqlite_kv_cursor_data(cursor, buf, &value_size);
+  if (rc != UNQLITE_OK) {
+    free(buf);
+    o_raise_simple("cursor: could not get data");
+  }
+  buf[value_size] = 0;
+
+  data_value = caml_copy_string(buf);
+  free(buf);
+
+  CAMLreturn(data_value);
+}
+
+/*
+int unqlite_kv_cursor_key(unqlite_kv_cursor *pCursor,void *pBuf,int *pnByte);
+int unqlite_kv_cursor_data(unqlite_kv_cursor *pCursor,void *pBuf,unqlite_int64 *pnData);
+*/

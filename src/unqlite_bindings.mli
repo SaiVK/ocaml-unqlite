@@ -17,3 +17,17 @@ val store: t -> string -> string -> unit
 val append: t -> string -> string -> unit
 val fetch: t -> string -> string
 val delete: t -> string -> unit
+
+module Cursor: sig
+  type c
+
+  val init: t -> c
+  val release: t -> c -> unit
+
+  val first_entry: c -> unit
+  val next_entry: c -> unit
+  val valid_entry: c -> bool
+
+  val key: c -> string
+  val data: c -> string
+end
