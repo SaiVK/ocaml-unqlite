@@ -24,10 +24,4 @@ val append: t -> string -> string -> unit
 val commit: t -> unit
 val rollback: t -> unit
 
-module Iterator: sig
-  type entry = string Lazy.t * string Lazy.t
-
-  val fold_left: ('a -> entry -> 'a) -> 'a -> t -> 'a
-
-  val iter: (entry -> unit) -> t -> unit
-end
+module Iterator: module type of Unqlite_iterator
