@@ -5,15 +5,30 @@ open Unqlite.Bindings
 
 (* TODO: remove hard-coded file locations *)
 
-let assert_error_msg_contains s =
+let assert_raises_with_msg s =
   let pattern = Str.quote s |> Str.regexp in
   fun f ->
-    try f () with
-    | Unqlite_error msg ->
+    try
+      f ();
+      failwith "no error raised"
+    with
+    | Unqlite_error (msg, _) ->
       try
         ignore (Str.search_forward pattern msg 0)
       with
       | Not_found -> failwith "error message [%s] did not contain [%s]" msg s
+
+let assert_raises_with_code c =
+  fun f ->
+    try
+      f ();
+      failwith "no error raised"
+    with
+    | Unqlite_error (_, code) as exn ->
+      if code != c then
+        let expected = Printexc.to_string (Unqlite_error ("", c)) in
+        let actual = Printexc.to_string exn in
+        failwith "expected error [%s], got [%s]" expected actual
 
 let open_inmem () = open_create ":mem:"
 
@@ -42,7 +57,7 @@ let test4 _ =
   close db
 
 let test5a _ =
-  assert_error_msg_contains "IO error" @@ fun _ ->
+  assert_raises_with_msg "IO error" @@ fun _ ->
   let db = open_create "/invalid/file" in
   store db "foo" "bar"
 
@@ -51,7 +66,8 @@ let test5b _ =
   let (key, value) = "5b", "b5" in
 
   let db = open_readwrite name in
-  assert_error_msg_contains "IO error" (fun _ -> store db key value);
+  assert_raises_with_msg "IO error" (fun _ -> store db key value);
+  assert_raises_with_code UNQLITE_IOERR (fun _ -> store db key value);
   close db;
 
   let db = open_create name in
@@ -59,7 +75,8 @@ let test5b _ =
   close db;
 
   let db = open_mmap name in
-  assert_error_msg_contains "Read-only" (fun _ -> store db key value);
+  assert_raises_with_msg "Read-only" (fun _ -> store db key value);
+  assert_raises_with_code UNQLITE_READ_ONLY (fun _ -> store db key value);
   close db;
 
   let db = open_readwrite name in
