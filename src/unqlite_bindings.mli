@@ -56,4 +56,6 @@ type error_code =
   | UNQLITE_LOCKERR          (* Locking protocol error *)
   | UNQLITE_BINDINGS         (* Error in the stub code *)
 
-  exception Unqlite_error of string * error_code
+exception Unqlite_error of string * error_code
+
+val pp_error_code: Format.formatter -> error_code -> unit

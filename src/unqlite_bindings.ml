@@ -60,3 +60,38 @@ let _ =
   Callback.register_exception
     "de.burgerdev.unqlite.error"
     (Unqlite_error ("", UNQLITE_BINDINGS))
+
+let string_of_error_code = function
+  | UNQLITE_NOMEM -> "UNQLITE_NOMEM"
+  | UNQLITE_ABORT -> "UNQLITE_ABORT"
+  | UNQLITE_IOERR -> "UNQLITE_IOERR"
+  | UNQLITE_CORRUPT -> "UNQLITE_CORRUPT"
+  | UNQLITE_LOCKED -> "UNQLITE_LOCKED"
+  | UNQLITE_BUSY -> "UNQLITE_BUSY"
+  | UNQLITE_DONE -> "UNQLITE_DONE"
+  | UNQLITE_PERM -> "UNQLITE_PERM"
+  | UNQLITE_NOTIMPLEMENTED -> "UNQLITE_NOTIMPLEMENTED"
+  | UNQLITE_NOTFOUND -> "UNQLITE_NOTFOUND"
+  | UNQLITE_NOOP -> "UNQLITE_NOOP"
+  | UNQLITE_INVALID -> "UNQLITE_INVALID"
+  | UNQLITE_EOF -> "UNQLITE_EOF"
+  | UNQLITE_UNKNOWN -> "UNQLITE_UNKNOWN"
+  | UNQLITE_LIMIT -> "UNQLITE_LIMIT"
+  | UNQLITE_EXISTS -> "UNQLITE_EXISTS"
+  | UNQLITE_EMPTY -> "UNQLITE_EMPTY"
+  | UNQLITE_COMPILE_ERR -> "UNQLITE_COMPILE_ERR"
+  | UNQLITE_VM_ERR -> "UNQLITE_VM_ERR"
+  | UNQLITE_FULL -> "UNQLITE_FULL"
+  | UNQLITE_CANTOPEN -> "UNQLITE_CANTOPEN"
+  | UNQLITE_READ_ONLY -> "UNQLITE_READ_ONLY"
+  | UNQLITE_LOCKERR -> "UNQLITE_LOCKERR"
+  | UNQLITE_BINDINGS -> "UNQLITE_BINDINGS"
+
+let pp_error_code ppf code =
+  string_of_error_code code
+  |> Format.fprintf ppf "%s"
+
+let _ = Printexc.register_printer @@ function
+  | Unqlite_error (msg, code) ->
+    Some (Format.sprintf "Unqlite_error(%S, %s)" msg (string_of_error_code code))
+  | _ -> None
