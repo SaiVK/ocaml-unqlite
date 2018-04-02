@@ -1,5 +1,5 @@
 
-all: build test examples
+all: build test
 
 build:
 	jbuilder build
