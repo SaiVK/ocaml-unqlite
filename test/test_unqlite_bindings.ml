@@ -5,38 +5,43 @@ open Unqlite.Bindings
 
 (* TODO: remove hard-coded file locations *)
 
-let assert_raises_with_msg s =
-  let pattern = Str.quote s |> Str.regexp in
+let assert_raises_unqlite ?(code=None) regexp =
+  let none = Fmt.(const string "_") in
+  let expected =
+    Fmt.(strf "Unqlite_error (%S, %a)" regexp (option ~none pp_error_code) code)
+  in
+  let pattern = Str.regexp regexp in
   fun f ->
     try
       f ();
-      failwith "no error raised"
+      failwith "expected error matching [%s], but no error was raised" expected
     with
-    | Unqlite_error (msg, _) ->
+    | Unqlite_error (msg, rc) as exn ->
+      let actual = Printexc.to_string exn in
+      let fail () =
+        failwith "expected error matching [%s], got [%s]" expected actual
+      in
+      begin
+        match code with
+        | Some c when c != rc -> fail ()
+        | _ -> ()
+      end;
       try
         ignore (Str.search_forward pattern msg 0)
       with
-      | Not_found -> failwith "error message [%s] did not contain [%s]" msg s
+      | Not_found ->
+        fail()
 
-let assert_raises_with_code c =
-  fun f ->
-    try
-      f ();
-      failwith "no error raised"
-    with
-    | Unqlite_error (_, code) as exn ->
-      if code != c then
-        let expected = Printexc.to_string (Unqlite_error ("", c)) in
-        let actual = Printexc.to_string exn in
-        failwith "expected error [%s], got [%s]" expected actual
+let temp_db opener =
+  Filename.temp_file "ocaml_unqlite_" ".db" |> opener
 
 let open_inmem () = open_create ":mem:"
 
 let test1 _ =
-  open_create "/tmp/db.unqlite" |> close
+  temp_db open_create |> close
 
 let test2 _ =
-  let db = open_create "/tmp/db2.unqlite" in
+  let db = temp_db open_create in
   rollback db;
   commit db;
   close db
@@ -57,17 +62,20 @@ let test4 _ =
   close db
 
 let test5a _ =
-  assert_raises_with_msg "IO error" @@ fun _ ->
-  let db = open_create "/invalid/file" in
+  assert_raises_unqlite ~code:(Some UNQLITE_IOERR) "IO error" @@ fun _ ->
+  let db = open_create "/invalid/file/burgerdev.de/ocaml-unqlite" in
   store db "foo" "bar"
 
 let test5b _ =
-  let name = "/tmp/db.5b.unqlite" in
+  let _ = Filename.temp_file  in
+  let name = temp_db @@ fun x -> x in
   let (key, value) = "5b", "b5" in
 
+  (* the temp file is already created, need to remove it to check [open_readwrite] *)
+  Unix.unlink name;
+
   let db = open_readwrite name in
-  assert_raises_with_msg "IO error" (fun _ -> store db key value);
-  assert_raises_with_code UNQLITE_IOERR (fun _ -> store db key value);
+  assert_raises_unqlite ~code:(Some UNQLITE_IOERR) "IO error" (fun _ -> store db key value);
   close db;
 
   let db = open_create name in
@@ -75,8 +83,7 @@ let test5b _ =
   close db;
 
   let db = open_mmap name in
-  assert_raises_with_msg "Read-only" (fun _ -> store db key value);
-  assert_raises_with_code UNQLITE_READ_ONLY (fun _ -> store db key value);
+  assert_raises_unqlite ~code:(Some UNQLITE_READ_ONLY) "Read-only" (fun _ -> store db key value);
   close db;
 
   let db = open_readwrite name in
