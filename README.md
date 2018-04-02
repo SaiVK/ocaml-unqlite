@@ -1,5 +1,7 @@
 # OCaml Bindings for UnQLite
 
+[![CircleCI](https://circleci.com/gh/burgerdev/ocaml-unqlite/tree/master.svg?style=shield)](https://circleci.com/gh/burgerdev/ocaml-unqlite/tree/master)
+
 ## License
 
 The bindings are licensed under the MIT license, see [here](LICENSE).
