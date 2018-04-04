@@ -5,43 +5,44 @@ let bin_version = "0.1"
 
 open Unqlite
 
-let store db_name key value _ =
-  Logs.debug (fun m -> m "Storing key [%s] in database [%s]." key db_name);
+let with_db db_name f =
   let db = open_db db_name in
   try
-    store db key value;
-    close db
+    let r = f db in
+    close db;
+    r
   with
-  | e -> close db; raise e
+  | e ->
+    close db;
+    raise e
+
+let store db_name key value _ =
+  Logs.debug (fun m -> m "Storing key %S in database %S." key db_name);
+  with_db db_name @@ fun db ->
+  store db key value
 
 let fetch db_name key _ =
-  Logs.debug (fun m -> m "Fetching key [%s] from database [%s]." key db_name);
-  let db = open_db db_name in
+  Logs.debug (fun m -> m "Fetching key %S from database %S." key db_name);
+  with_db db_name @@ fun db ->
+  fetch_exn db key |> print_endline
 
-  try
-    fetch_exn db key |> print_endline;
-    close db
-  with
-  | e -> close db; raise e
+let print_kv (lazy_key, lazy_val) =
+  Fmt.pr "%s\t%s\n" (Lazy.force lazy_key) (Lazy.force lazy_val)
+
+let fetch_all db_name _ =
+  Logs.debug (fun m -> m "Fetching everything from database %S." db_name);
+  with_db db_name @@ fun db ->
+  Iterator.iter print_kv db
 
 let delete db_name key _ =
-  Logs.debug (fun m -> m "Deleting key [%s] from database [%s]." key db_name);
-  let db = open_db db_name in
-  try
-    delete_exn db key;
-    close db
-  with
-  | Not_found -> close db
-  | e -> close db; raise e
+  Logs.debug (fun m -> m "Deleting key %S from database %S." key db_name);
+  with_db db_name @@ fun db ->
+  delete db key
 
 let append db_name key value _ =
-  Logs.debug (fun m -> m "Appending key [%s] to database [%s]." key db_name);
-  let db = open_db db_name in
-  try
-    append db key value;
-    close db
-  with
-  | e -> close db; raise e
+  Logs.debug (fun m -> m "Appending key %S to database %S." key db_name);
+  with_db db_name @@ fun db ->
+  append db key value
 
 
 (* Logging stuff, copy pasta from docs *)
@@ -80,6 +81,10 @@ let tag doc =
     | Some n -> String.sub doc 0 n
   in String.lowercase_ascii word
 
+let basic_cmd f doc =
+  Term.(const f $ db_term $ log_term),
+  Term.info (tag doc) ~doc ~sdocs:Manpage.s_common_options
+
 let unary_cmd f t doc =
   Term.(const f $ db_term $ t $ log_term),
   Term.info (tag doc) ~doc ~sdocs:Manpage.s_common_options
@@ -94,6 +99,7 @@ let default_cmd =
   Term.info bin_name ~version:bin_version ~doc
 
 let cmds = [
+  basic_cmd fetch_all "List database content.";
   unary_cmd fetch key_term "Fetch a value from the database.";
   binary_cmd store key_term value_term "Store a key/value pair in the database.";
   binary_cmd append key_term value_term "Append a key/value pair to the database.";
