@@ -280,9 +280,8 @@ CAMLprim value o_unqlite_cursor_release(value db_value, value cursor_value) {
 
 CAMLprim value o_unqlite_cursor_first_entry(value cursor_value) {
   CAMLparam1(cursor_value);
-  unqlite_kv_cursor *cursor = get_cursor(cursor_value);
 
-  int rc = unqlite_kv_cursor_first_entry(cursor);
+  int rc = unqlite_kv_cursor_first_entry(get_cursor(cursor_value));
   if (rc != UNQLITE_OK)
     o_raise("cursor first entry failed", rc);
 
@@ -291,9 +290,8 @@ CAMLprim value o_unqlite_cursor_first_entry(value cursor_value) {
 
 CAMLprim value o_unqlite_cursor_next_entry(value cursor_value) {
   CAMLparam1(cursor_value);
-  unqlite_kv_cursor *cursor = get_cursor(cursor_value);
 
-  int rc = unqlite_kv_cursor_next_entry(cursor);
+  int rc = unqlite_kv_cursor_next_entry(get_cursor(cursor_value));
   if (rc != UNQLITE_OK)
     o_raise("cursor next entry failed", rc);
 
